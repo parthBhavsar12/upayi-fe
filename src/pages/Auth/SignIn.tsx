@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -5,8 +6,13 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { PageLayout } from '../../components/Common/PageLayout';
 import { Input } from '../../components/Common/Input';
 import { signInSchema } from '../../schemas';
+import { authService } from '../../api/auth';
+import { useAuth } from '../../context/AuthContext';
 
 export function SignIn() {
+  const { login } = useAuth();
+  const [apiError, setApiError] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -16,9 +22,14 @@ export function SignIn() {
     mode: 'onBlur',
   });
 
-  const onSubmit = (data: any) => {
-    console.log('SignIn Data:', data);
-    // Simulate login
+  const onSubmit = async (data: any) => {
+    try {
+      setApiError(null);
+      const response = await authService.signin(data);
+      login(response);
+    } catch (error: any) {
+      setApiError(error.response?.data?.message || 'Failed to sign in. Please try again.');
+    }
   };
 
   return (
@@ -34,6 +45,13 @@ export function SignIn() {
         </header>
         
         <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
+          {apiError && (
+            <div className="form-error-banner" role="alert">
+              <span className="error-icon">!</span>
+              {apiError}
+            </div>
+          )}
+
           <Input
             id="email"
             label="Email address"

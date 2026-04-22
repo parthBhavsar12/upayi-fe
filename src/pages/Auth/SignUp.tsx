@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -5,8 +6,13 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { PageLayout } from '../../components/Common/PageLayout';
 import { Input } from '../../components/Common/Input';
 import { signUpSchema } from '../../schemas';
+import { authService } from '../../api/auth';
+import { useAuth } from '../../context/AuthContext';
 
 export function SignUp() {
+  const { login } = useAuth();
+  const [apiError, setApiError] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -16,9 +22,16 @@ export function SignUp() {
     mode: 'onBlur',
   });
 
-  const onSubmit = (data: any) => {
-    console.log('SignUp Data:', data);
-    // Simulate signup
+  const onSubmit = async (data: any) => {
+    try {
+      setApiError(null);
+      // Remove confirmPassword before sending to API
+      const { confirmPassword, ...signupData } = data;
+      const response = await authService.signup(signupData);
+      login(response);
+    } catch (error: any) {
+      setApiError(error.response?.data?.message || 'Failed to create account. Please try again.');
+    }
   };
 
   return (
@@ -34,6 +47,13 @@ export function SignUp() {
         </header>
         
         <form className="auth-form" onSubmit={handleSubmit(onSubmit)}>
+          {apiError && (
+            <div className="form-error-banner" role="alert">
+              <span className="error-icon">!</span>
+              {apiError}
+            </div>
+          )}
+
           <Input
             id="name"
             label="Full Name"

@@ -5,15 +5,21 @@ import { Home } from './pages/Home/Home';
 import { SignIn } from './pages/Auth/SignIn';
 import { SignUp } from './pages/Auth/SignUp';
 import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute } from './components/Common/ProtectedRoute';
+import { GuestRoute } from './components/Common/GuestRoute';
 
 function App() {
   return (
     <AuthProvider>
       <Routes>
         <Route path="/" element={<MainLayout />}>
-          <Route index element={<Home />} />
-          <Route path="signin" element={<SignIn />} />
-          <Route path="signup" element={<SignUp />} />
+          <Route element={<ProtectedRoute />}>
+            <Route index element={<Home />} />
+          </Route>
+          <Route element={<GuestRoute />}>
+            <Route path="signin" element={<SignIn />} />
+            <Route path="signup" element={<SignUp />} />
+          </Route>
         </Route>
       </Routes>
     </AuthProvider>

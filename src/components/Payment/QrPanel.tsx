@@ -15,7 +15,8 @@ export function QrPanel({ amount, paymentUrl }: QrPanelProps) {
           <span>{env.upiCurrencySymbol}</span>
           <span>{amount}</span>
         </strong>
-        <small>{env.payeeName}</small>
+        <small>Receiver: {env.payeeName}</small>
+        <small>UPI ID: {env.payeeUpiId}</small>
       </div>
       <div className="qr-panel__code">
         <QRCodeSVG

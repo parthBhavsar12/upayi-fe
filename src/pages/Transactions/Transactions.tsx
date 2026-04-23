@@ -33,9 +33,19 @@ export function Transactions() {
   };
 
   const handleSearch = (value: string) => {
-    const trimmedValue = value.trim().toLowerCase();
-    setSearchTerm(trimmedValue);
-    setCurrentPage(1);
+    const trimmedValue = value.trim();
+    
+    // Only allow numeric values (amounts)
+    const isNumeric = !isNaN(parseFloat(trimmedValue)) && isFinite(parseFloat(trimmedValue));
+    
+    if (trimmedValue === '' || isNumeric) {
+      setSearchTerm(trimmedValue);
+      setCurrentPage(1);
+    } else {
+      // Clear search if non-numeric input
+      setSearchTerm('');
+      setCurrentPage(1);
+    }
   };
 
   // Clear data when single date changes
@@ -218,66 +228,44 @@ export function Transactions() {
     },
   ];
 
+  const [searchInput, setSearchInput] = useState('');
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Remove any character that is not a digit or a dot
+    const cleaned = value.replace(/[^\d.]/g, '');
+    // Prevent multiple dots
+    const validValue = cleaned.replace(/(\..*)\./g, '$1');
+    
+    setSearchInput(validValue);
+
+    if (validValue === '') {
+      setSearchTerm('');
+      setCurrentPage(1);
+    }
+  };
+
   return (
     <div className="transactions-container">
-      {/* Statistics Tiles */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12}>
-          <Card className="stat-card">
-            <div 
-              className="stat-title security-label"
-              style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                color: '#6b7280',
-                marginBottom: '8px'
-              }}
-            >
-              Total Transactions
-            </div>
-            <Statistic
-              value={transactionCount}
-              prefix="#"
-              valueStyle={{ color: '#5e8edb' }}
-              title=""  // Empty title since we use custom title
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12}>
-          <Card className="stat-card">
-            <div 
-              className="stat-title security-label"
-              style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                color: '#6b7280',
-                marginBottom: '8px'
-              }}
-            >
-              Total Amount
-            </div>
-            <Statistic
-              value={totalAmount}
-              prefix="₹"
-              precision={2}
-              valueStyle={{ color: '#0087d1' }}
-              title=""  // Empty title since we use custom title
-            />
-          </Card>
-        </Col>
-      </Row>
 
       <div className="transactions-header">
         <h2>Transactions</h2>
         <div className="transactions-filters">
         <Search
-          placeholder="Search transactions..."
+          placeholder="Search transactions by amount"
           allowClear
           enterButton
           size="large"
-          onSearch={handleSearch}
+          value={searchInput}
+          onSearch={(value) => {
+            handleSearch(value);
+          }}
+          onChange={handleSearchChange}
+          onClear={() => {
+            setSearchInput('');
+            setSearchTerm('');
+            setCurrentPage(1);
+          }}
           style={{ width: 300 }}
         />
         
@@ -334,6 +322,55 @@ export function Transactions() {
         </Space>
         </div>
       </div>
+
+      {/* Statistics Tiles */}
+      <Row gutter={[16, 16]} style={{ marginTop: 24, marginBottom: 24 }}>
+        <Col xs={24} sm={12}>
+          <Card className="stat-card">
+            <div 
+              className="stat-title security-label"
+              style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: '#6b7280',
+                marginBottom: '8px'
+              }}
+            >
+              Total Transactions
+            </div>
+            <Statistic
+              value={transactionCount}
+              prefix="#"
+              valueStyle={{ color: '#5e8edb' }}
+              title=""  // Empty title since we use custom title
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Card className="stat-card">
+            <div 
+              className="stat-title security-label"
+              style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: '#6b7280',
+                marginBottom: '8px'
+              }}
+            >
+              Total Amount
+            </div>
+            <Statistic
+              value={totalAmount}
+              prefix="₹"
+              precision={2}
+              valueStyle={{ color: '#0087d1' }}
+              title=""  // Empty title since we use custom title
+            />
+          </Card>
+        </Col>
+      </Row>
       
       {isMobile ? (
         <div className="mobile-transactions-list">

@@ -17,6 +17,7 @@ export function Transactions() {
   const [toastMessage, setToastMessage] = useState('');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
+  const [isDeletingTransaction, setIsDeletingTransaction] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState<'today' | 'yesterday' | 'thisMonth' | 'lastMonth' | 'last3Months' | 'lastYear' | 'currentYear' | 'singleDate' | 'customRange'>('today');
   const [singleDate, setSingleDate] = useState<Dayjs | null>(null);
@@ -149,12 +150,15 @@ export function Transactions() {
   const handleConfirmDelete = async () => {
     if (transactionToDelete) {
       try {
+        setIsDeletingTransaction(true);
         await deleteTransaction(transactionToDelete);
         setTransactions(transactions.filter(t => t._id !== transactionToDelete));
         setToastMessage('Transaction deleted successfully');
       } catch (error) {
         console.error('Failed to delete transaction:', error);
         setToastMessage('Failed to delete transaction');
+      } finally {
+        setIsDeletingTransaction(false);
       }
     }
     setDeleteConfirmOpen(false);
@@ -162,6 +166,7 @@ export function Transactions() {
   };
 
   const handleCancelDelete = () => {
+    if (isDeletingTransaction) return;
     setDeleteConfirmOpen(false);
     setTransactionToDelete(null);
   };
@@ -536,6 +541,9 @@ export function Transactions() {
         message="Are you sure you want to delete this transaction? This action cannot be undone."
         onConfirm={() => void handleConfirmDelete()}
         onCancel={handleCancelDelete}
+        isConfirmLoading={isDeletingTransaction}
+        confirmText="Delete"
+        confirmLoadingText="Deleting..."
       />
       
       {toastMessage && (

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { useSelector, useDispatch } from 'react-redux';
 
 import { env } from '../../config/env';
 import { normalizeAmount } from '../../utils/payment';
@@ -12,14 +13,20 @@ import { PaymentPreview } from '../../components/Payment/PaymentPreview';
 import { QrPanel } from '../../components/Payment/QrPanel';
 import { PageLayout } from '../../components/Common/PageLayout';
 import { paymentSchema } from '../../schemas';
+import { saveTransaction } from '../../api/transactions';
+import { RootState, AppDispatch } from '../../store';
+import { fetchProfile } from '../../store/slices/profileSlice';
 
 interface PaymentFormData {
   amount: string;
 }
 
 export function Home() {
+  const { profile } = useSelector((state: RootState) => state.profile);
+  const dispatch = useDispatch<AppDispatch>();
   const [submittedAmount, setSubmittedAmount] = useState('');
   const [toastMessage, setToastMessage] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const {
     register,
@@ -38,20 +45,20 @@ export function Home() {
   const displayAmount = currentAmount || '0';
 
   const submittedPaymentUrl = useMemo(() => {
-    if (!submittedAmount) {
+    if (!submittedAmount || !profile) {
       return '';
     }
 
     const params = new URLSearchParams({
-      pa: env.payeeUpiId,
-      pn: env.payeeName,
+      pa: profile.upiId,
+      pn: profile.name,
       am: submittedAmount,
       cu: env.upiCurrency,
       tn: env.upiPaymentNote,
     });
 
     return `upi://pay?${params.toString()}`;
-  }, [submittedAmount]);
+  }, [submittedAmount, profile]);
 
   const hasGeneratedQr = Boolean(submittedPaymentUrl);
 
@@ -64,6 +71,12 @@ export function Home() {
 
     return () => window.clearTimeout(timeoutId);
   }, [toastMessage]);
+
+  useEffect(() => {
+    if (!profile) {
+      void dispatch(fetchProfile());
+    }
+  }, [profile, dispatch]);
 
   function onSubmit(data: PaymentFormData) {
     setSubmittedAmount(data.amount);
@@ -79,6 +92,18 @@ export function Home() {
     setSubmittedAmount('');
     setToastMessage(message);
     reset({ amount: '' });
+  }
+
+  async function handleReceivedOk() {
+    try {
+      setIsSaving(true);
+      await saveTransaction(Number(submittedAmount));
+      resetPaymentWithToast('Payment Marked as Paid & Saved!');
+    } catch (error) {
+      setToastMessage('Failed to save transaction');
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -102,6 +127,7 @@ export function Home() {
                 className="action-button action-button--change"
                 type="button"
                 onClick={showFormWithClearedAmount}
+                disabled={isSaving}
               >
                 Change amount
               </button>
@@ -110,14 +136,16 @@ export function Home() {
                 <button
                   className="action-button action-button--ok"
                   type="button"
-                  onClick={() => resetPaymentWithToast('Payment Marked as Paid!')}
+                  onClick={handleReceivedOk}
+                  disabled={isSaving}
                 >
-                  Received, OK!
+                  {isSaving ? 'Saving...' : 'Received, OK!'}
                 </button>
                 <button
                   className="action-button action-button--cancel"
                   type="button"
                   onClick={() => resetPaymentWithToast('Payment Cancelled!')}
+                  disabled={isSaving}
                 >
                   Cancel
                 </button>

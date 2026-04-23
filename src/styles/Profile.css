@@ -181,8 +181,48 @@
 }
 
 @media (max-width: 600px) {
+  /* Override PageLayout constraints for Profile page */
+  .payment-page {
+    min-height: auto;
+    height: auto;
+    overflow: visible;
+  }
+  
+  .payment-layout {
+    min-height: auto;
+    height: auto;
+    overflow: visible;
+  }
+  
+  .phone-frame {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  
   .profile-container {
     padding: 20px;
+    min-height: auto;
+    overflow: visible;
+  }
+  
+  .profile-section {
+    overflow: visible;
+  }
+  
+  .profile-form {
+    min-width: auto;
+    max-width: 100%;
+  }
+  
+  .form-group {
+    min-width: auto;
+    max-width: 100%;
+  }
+  
+  .input-wrapper {
+    overflow: visible;
   }
   
   .profile-edit-group {

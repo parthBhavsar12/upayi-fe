@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { getTransactions, deleteTransaction, Transaction } from '../../api/transactions';
 import { ConfirmPopup } from '../../components/Common/ConfirmPopup';
 import { Toast } from '../../components/Common/Toast';
-import { Table, Button, Tag, DatePicker, Input, Card, Row, Col, Statistic } from 'antd';
-import { DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, DatePicker, Input, Card, Row, Col, Statistic, Pagination } from 'antd';
+import { DeleteOutlined, SearchOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import '../../styles/Transactions.css';
 
 const { Search } = Input;
+const PAGE_SIZE = 10;
 
 export function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -17,11 +19,17 @@ export function Transactions() {
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDate, setFilterDate] = useState<Dayjs | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
         setLoading(true);
+        
+        // Get user's local timezone
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
         
         // Build query parameters for API filtering
         const params = new URLSearchParams();
@@ -31,14 +39,17 @@ export function Transactions() {
         if (filterDate) {
           params.append('date', filterDate.format('YYYY-MM-DD'));
         }
+        // Don't send 'all=true' by default - let backend show today's data
+        // Only send 'all=true' when user explicitly wants all data (e.g., via a "Show All" button)
+        // Always send timezone
+        params.append('timezone', timezone);
         
-        const queryParams = params.toString();
-        const data = await getTransactions(queryParams || undefined);
+        const data = await getTransactions(params.toString());
         setTransactions(data);
         setLoading(false);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to fetch transactions:', error);
-        setToastMessage('Failed to load transactions');
+        setToastMessage(error.response?.data?.message || 'Failed to load transactions');
         setLoading(false);
       }
     };
@@ -52,6 +63,22 @@ export function Transactions() {
       return () => clearTimeout(timer);
     }
   }, [toastMessage]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   const handleDeleteClick = (id: string) => {
     setTransactionToDelete(id);
@@ -106,15 +133,23 @@ export function Transactions() {
     },
     {
       title: 'Date',
-      dataIndex: 'createdAt',
+      dataIndex: 'localCreatedAt',
       key: 'date',
-      render: (date: string) => dayjs(date).format('MMM DD, YYYY'),
+      render: (localDate: string, record: Transaction) => {
+        // Use localCreatedAt if available, fallback to createdAt
+        const dateToUse = localDate || record.createdAt;
+        return dayjs(dateToUse).format('MMM DD, YYYY');
+      },
     },
     {
       title: 'Time',
-      dataIndex: 'createdAt',
+      dataIndex: 'localCreatedAt',
       key: 'time',
-      render: (date: string) => dayjs(date).format('hh:mm A'),
+      render: (localDate: string, record: Transaction) => {
+        // Use localCreatedAt if available, fallback to createdAt
+        const dateToUse = localDate || record.createdAt;
+        return dayjs(dateToUse).format('hh:mm A');
+      },
     },
     {
       title: 'Actions',
@@ -205,18 +240,76 @@ export function Transactions() {
         </div>
       </div>
       
-      <Table
-        columns={columns}
-        dataSource={filteredTransactions}
-        rowKey="_id"
-        loading={loading}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: false,
-          showQuickJumper: true,
-          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-        }}
-      />
+      {isMobile ? (
+        <div className="mobile-transactions-list">
+          {filteredTransactions
+            .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+            .map((transaction) => (
+              <Card key={transaction._id} className="mobile-transaction-card">
+                <div className="mobile-transaction-header">
+                  <Tag color="blue">#{transaction._id.slice(-8)}</Tag>
+                  <Button
+                    icon={<DeleteOutlined />}
+                    onClick={() => handleDeleteClick(transaction._id)}
+                    danger
+                    size="small"
+                  >
+                    Delete
+                  </Button>
+                </div>
+                <div className="mobile-transaction-body">
+                  <div className="mobile-transaction-amount">
+                    <span className="amount-label">Amount</span>
+                    <span className="amount-value">₹{transaction.amount.toFixed(2)}</span>
+                  </div>
+                  <div className="mobile-transaction-date">
+                    <div className="date-item">
+                      <span className="date-label">Date</span>
+                      <span className="date-value">{dayjs(transaction.localCreatedAt || transaction.createdAt).format('MMM DD, YYYY')}</span>
+                    </div>
+                    <div className="date-item">
+                      <span className="date-label">Time</span>
+                      <span className="date-value">{dayjs(transaction.localCreatedAt || transaction.createdAt).format('hh:mm A')}</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          
+          {filteredTransactions.length === 0 && !loading && (
+            <div className="no-transactions">No transactions found</div>
+          )}
+          
+          {/* Mobile Pagination */}
+          {filteredTransactions.length > PAGE_SIZE && (
+            <div className="mobile-pagination">
+              <Pagination
+                current={currentPage}
+                total={filteredTransactions.length}
+                pageSize={PAGE_SIZE}
+                showSizeChanger={false}
+                showQuickJumper={false}
+                showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
+                onChange={(page) => setCurrentPage(page)}
+                simple={true}
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        <Table
+          columns={columns}
+          dataSource={filteredTransactions}
+          rowKey="_id"
+          loading={loading}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: false,
+            showQuickJumper: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+          }}
+        />
+      )}
       
       <ConfirmPopup 
         isOpen={deleteConfirmOpen}
@@ -229,6 +322,16 @@ export function Transactions() {
       {toastMessage && (
         <Toast message={toastMessage} />
       )}
+      
+      {/* Scroll to Top Button */}
+      <Button
+        type="primary"
+        shape="circle"
+        icon={<ArrowUpOutlined />}
+        className={`scroll-to-top ${showScrollTop ? 'visible' : ''}`}
+        onClick={scrollToTop}
+        size="large"
+      />
     </div>
   );
 }

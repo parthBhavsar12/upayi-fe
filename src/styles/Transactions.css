@@ -39,7 +39,6 @@
   margin-bottom: 8px !important;
 }
 
-
 .stat-card .ant-statistic .ant-statistic-title {
   font-size: 0.84rem !important;
   font-weight: 800 !important;
@@ -142,5 +141,211 @@
   .transactions-filters .ant-input-search,
   .transactions-filters .ant-picker {
     width: 100%;
+  }
+}
+
+/* Mobile Transaction Cards */
+.mobile-transactions-list {
+  display: none;
+}
+
+.mobile-transaction-card {
+  margin-bottom: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-transaction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.mobile-transaction-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-transaction-amount {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.amount-label {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.amount-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: #5e8edb;
+}
+
+.mobile-transaction-date {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.date-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.date-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.date-value {
+  font-size: 14px;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.no-transactions {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+  font-size: 16px;
+}
+
+/* Mobile Pagination */
+.mobile-pagination {
+  margin-top: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: center;
+}
+
+.mobile-pagination .ant-pagination {
+  text-align: center;
+}
+
+.mobile-pagination .ant-pagination-simple {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .mobile-transactions-list {
+    display: block;
+  }
+  
+  .ant-table-wrapper {
+    display: none;
+  }
+  
+  .mobile-transaction-card {
+    margin-bottom: 16px;
+  }
+  
+  .amount-value {
+    font-size: 20px;
+  }
+  
+  .mobile-transaction-date {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .date-item {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+/* Scroll to Top Button */
+.scroll-to-top {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px) scale(0.8);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
+  backdrop-filter: blur(10px);
+  width: 50px !important;
+  height: 50px !important;
+  min-width: 50px !important;
+  max-width: 50px !important;
+  min-height: 50px !important;
+  max-height: 50px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.scroll-to-top.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.scroll-to-top:hover {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 8px 30px rgba(14, 165, 233, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.scroll-to-top:active {
+  transform: translateY(-2px) scale(0.98);
+  transition: all 0.1s ease;
+}
+
+.scroll-to-top:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.4), 0 4px 20px rgba(14, 165, 233, 0.3);
+}
+
+.scroll-to-top .anticon {
+  font-size: 20px;
+  color: white;
+  transition: transform 0.3s ease;
+}
+
+.scroll-to-top:hover .anticon {
+  transform: translateY(-2px);
+}
+
+/* Mobile adjustments for scroll-to-top button */
+@media (max-width: 768px) {
+  .scroll-to-top {
+    bottom: 20px;
+    right: 20px;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    max-width: 48px !important;
+    min-height: 48px !important;
+    max-height: 48px !important;
+  }
+  
+  .scroll-to-top .anticon {
+    font-size: 18px;
   }
 }

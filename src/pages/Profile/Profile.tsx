@@ -69,6 +69,11 @@ export function Profile() {
     setEditUpiValue('');
   };
 
+  const truncateUpiId = (upiId: string) => {
+    if (!upiId) return upiId;
+    return upiId.length > 15 ? `${upiId.slice(0, 15)}...` : upiId;
+  };
+
   const handleSaveUpi = async () => {
     if (!editUpiValue.trim()) {
       setToastMessage('UPI ID cannot be empty');
@@ -176,7 +181,9 @@ export function Profile() {
               </div>
             ) : (
               <div className="profile-edit-group">
-                <div className="profile-value">{profile.upiId}</div>
+                <div className="profile-value" title={profile.upiId}>
+                  {truncateUpiId(profile.upiId)}
+                </div>
                 <button className="profile-btn profile-btn--edit" onClick={handleEditUpiClick}>
                   Edit
                 </button>

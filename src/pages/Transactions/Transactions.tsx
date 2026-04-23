@@ -33,9 +33,19 @@ export function Transactions() {
   };
 
   const handleSearch = (value: string) => {
-    const trimmedValue = value.trim().toLowerCase();
-    setSearchTerm(trimmedValue);
-    setCurrentPage(1);
+    const trimmedValue = value.trim();
+    
+    // Only allow numeric values (amounts)
+    const isNumeric = !isNaN(parseFloat(trimmedValue)) && isFinite(parseFloat(trimmedValue));
+    
+    if (trimmedValue === '' || isNumeric) {
+      setSearchTerm(trimmedValue);
+      setCurrentPage(1);
+    } else {
+      // Clear search if non-numeric input
+      setSearchTerm('');
+      setCurrentPage(1);
+    }
   };
 
   // Clear data when single date changes
@@ -218,66 +228,75 @@ export function Transactions() {
     },
   ];
 
+  const [searchInput, setSearchInput] = useState('');
+
+  // Function to get date range text based on filter
+  const getDateRangeText = () => {
+    const today = dayjs();
+    
+    switch (dateFilter) {
+      case 'today':
+        return today.format('MMM DD, YYYY');
+      case 'yesterday':
+        return today.subtract(1, 'day').format('MMM DD, YYYY');
+      case 'thisMonth':
+        return today.startOf('month').format('MMM DD') + ' - ' + today.format('MMM DD, YYYY');
+      case 'lastMonth':
+        return today.subtract(1, 'month').startOf('month').format('MMM DD') + ' - ' + today.subtract(1, 'month').endOf('month').format('MMM DD, YYYY');
+      case 'last3Months':
+        return today.subtract(2, 'month').startOf('month').format('MMM DD') + ' - ' + today.format('MMM DD, YYYY');
+      case 'lastYear':
+        return today.subtract(1, 'year').startOf('year').format('MMM DD, YYYY') + ' - ' + today.subtract(1, 'year').endOf('year').format('MMM DD, YYYY');
+      case 'currentYear':
+        return today.startOf('year').format('MMM DD') + ' - ' + today.format('MMM DD, YYYY');
+      case 'singleDate':
+        return singleDate ? singleDate.format('MMM DD, YYYY') : 'Select date';
+      case 'customRange':
+        if (customStartDate && customEndDate) {
+          return customStartDate.format('MMM DD') + ' - ' + customEndDate.format('MMM DD, YYYY');
+        }
+        return 'Select range';
+      default:
+        return 'All dates';
+    }
+  };
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Remove any character that is not a digit or a dot
+    const cleaned = value.replace(/[^\d.]/g, '');
+    // Prevent multiple dots
+    const validValue = cleaned.replace(/(\..*)\./g, '$1');
+    
+    setSearchInput(validValue);
+
+    if (validValue === '') {
+      setSearchTerm('');
+      setCurrentPage(1);
+    }
+  };
+
   return (
     <div className="transactions-container">
-      {/* Statistics Tiles */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={24} sm={12}>
-          <Card className="stat-card">
-            <div 
-              className="stat-title security-label"
-              style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                color: '#6b7280',
-                marginBottom: '8px'
-              }}
-            >
-              Total Transactions
-            </div>
-            <Statistic
-              value={transactionCount}
-              prefix="#"
-              valueStyle={{ color: '#5e8edb' }}
-              title=""  // Empty title since we use custom title
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12}>
-          <Card className="stat-card">
-            <div 
-              className="stat-title security-label"
-              style={{
-                display: 'block',
-                fontSize: '0.875rem',
-                fontWeight: 500,
-                color: '#6b7280',
-                marginBottom: '8px'
-              }}
-            >
-              Total Amount
-            </div>
-            <Statistic
-              value={totalAmount}
-              prefix="₹"
-              precision={2}
-              valueStyle={{ color: '#0087d1' }}
-              title=""  // Empty title since we use custom title
-            />
-          </Card>
-        </Col>
-      </Row>
 
       <div className="transactions-header">
         <h2>Transactions</h2>
         <div className="transactions-filters">
         <Search
-          placeholder="Search transactions..."
+          placeholder="Search transactions by amount"
           allowClear
           enterButton
           size="large"
-          onSearch={handleSearch}
+          value={searchInput}
+          onSearch={(value) => {
+            handleSearch(value);
+          }}
+          onChange={handleSearchChange}
+          onClear={() => {
+            setSearchInput('');
+            setSearchTerm('');
+            setCurrentPage(1);
+          }}
           style={{ width: 300 }}
         />
         
@@ -319,7 +338,17 @@ export function Transactions() {
                 placeholder="Start date"
                 size="large"
                 style={{ width: 140 }}
-                disabledDate={(current) => current && current > dayjs().endOf('day')}
+                disabledDate={(current) => {
+                  // Disable dates after today
+                  if (current && current > dayjs().endOf('day')) {
+                    return true;
+                  }
+                  // Disable dates after end date if end date is selected
+                  if (customEndDate && current && current > customEndDate.endOf('day')) {
+                    return true;
+                  }
+                  return false;
+                }}
               />
               <DatePicker
                 value={customEndDate}
@@ -327,13 +356,97 @@ export function Transactions() {
                 placeholder="End date"
                 size="large"
                 style={{ width: 140 }}
-                disabledDate={(current) => current && current > dayjs().endOf('day')}
+                disabledDate={(current) => {
+                  // Disable dates after today
+                  if (current && current > dayjs().endOf('day')) {
+                    return true;
+                  }
+                  // Disable dates before start date if start date is selected
+                  if (customStartDate && current && current < customStartDate.startOf('day')) {
+                    return true;
+                  }
+                  return false;
+                }}
               />
             </Space>
           )}
         </Space>
         </div>
       </div>
+
+      {/* Statistics Tiles */}
+      <Row gutter={[16, 16]} style={{ marginTop: 24, marginBottom: 24 }}>
+        <Col xs={24} sm={12} md={8}>
+          <Card className="stat-card">
+            <div 
+              className="stat-title security-label"
+              style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: '#6b7280',
+                marginBottom: '8px'
+              }}
+            >
+              Data From
+            </div>
+            <Statistic
+              value={getDateRangeText()}
+              valueStyle={{ 
+                color: '#10b981',
+                fontSize: '1.50rem',
+                fontWeight: 600
+              }}
+              title=""  // Empty title since we use custom title
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8}>
+          <Card className="stat-card">
+            <div 
+              className="stat-title security-label"
+              style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: '#6b7280',
+                marginBottom: '8px'
+              }}
+            >
+              Total Transactions
+            </div>
+            <Statistic
+              value={transactionCount}
+              prefix="#"
+              valueStyle={{ color: '#5e8edb' }}
+              title=""  // Empty title since we use custom title
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={8}>
+          <Card className="stat-card">
+            <div 
+              className="stat-title security-label"
+              style={{
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                color: '#6b7280',
+                marginBottom: '8px'
+              }}
+            >
+              Total Amount
+            </div>
+            <Statistic
+              value={totalAmount}
+              prefix="₹"
+              precision={2}
+              valueStyle={{ color: '#0087d1' }}
+              title=""  // Empty title since we use custom title
+            />
+          </Card>
+        </Col>
+      </Row>
       
       {isMobile ? (
         <div className="mobile-transactions-list">

@@ -15,5 +15,5 @@ export const env: PublicEnv = {
   mode: import.meta.env.MODE,
   isDevelopment: import.meta.env.DEV,
   isProduction: import.meta.env.PROD,
-  apiBaseUrl: import.meta.env.VITE_API_URL,
+  apiBaseUrl: import.meta.env.VITE_API_URL as string,
 };

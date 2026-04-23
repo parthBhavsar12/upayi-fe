@@ -1,10 +1,12 @@
 import { NavLink, Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
 import { Logo } from '../Branding/Branding';
 import { useAuth } from '../../context/AuthContext';
 
 export function Header() {
   const location = useLocation();
   const { user, logout, isAuthenticated } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isSignIn = location.pathname === '/signin';
   const isSignUp = location.pathname === '/signup';
@@ -40,6 +42,37 @@ export function Header() {
               <button className="nav-link nav-link--primary" onClick={logout}>
                 Sign Out
               </button>
+
+              {/* Mobile Menu Button */}
+              <button 
+                className="mobile-menu-button"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle menu"
+              >
+                <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
+                <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
+                <span className={`hamburger-line ${isMobileMenuOpen ? 'open' : ''}`}></span>
+              </button>
+
+              {/* Mobile Menu */}
+              <div className={`mobile-menu ${isMobileMenuOpen ? 'open' : ''}`}>
+                <NavLink
+                  to="/transactions"
+                  className="mobile-menu-link"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Transactions
+                </NavLink>
+                <button 
+                  className="mobile-menu-link mobile-menu-signout"
+                  onClick={() => {
+                    logout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  Sign Out
+                </button>
+              </div>
             </div>
           ) : (
             <>

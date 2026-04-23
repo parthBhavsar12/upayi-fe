@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { getTransactions, deleteTransaction, Transaction } from '../../api/transactions';
 import { ConfirmPopup } from '../../components/Common/ConfirmPopup';
 import { Toast } from '../../components/Common/Toast';
-import { Table, Button, Tag, DatePicker, Input, Card, Row, Col, Statistic } from 'antd';
-import { DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, DatePicker, Input, Card, Row, Col, Statistic, Pagination, Select, Space } from 'antd';
+import { DeleteOutlined, ArrowUpOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import '../../styles/Transactions.css';
 
 const { Search } = Input;
+const PAGE_SIZE = 10;
 
 export function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -16,35 +18,95 @@ export function Transactions() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterDate, setFilterDate] = useState<Dayjs | null>(null);
+  const [dateFilter, setDateFilter] = useState<'today' | 'yesterday' | 'thisMonth' | 'lastMonth' | 'last3Months' | 'lastYear' | 'currentYear' | 'singleDate' | 'customRange'>('today');
+  const [singleDate, setSingleDate] = useState<Dayjs | null>(null);
+  const [customStartDate, setCustomStartDate] = useState<Dayjs | null>(null);
+  const [customEndDate, setCustomEndDate] = useState<Dayjs | null>(null);
+  const [filterChangeTrigger, setFilterChangeTrigger] = useState(0);
+
+  // Clear transactions when filter changes to prevent confusion
+  const handleDateFilterChange = (newFilter: typeof dateFilter) => {
+    setTransactions([]); // Clear all data immediately
+    setCurrentPage(1); // Reset to first page
+    setDateFilter(newFilter);
+    setFilterChangeTrigger(prev => prev + 1); // Force useEffect to run
+  };
+
+  const handleSearch = (value: string) => {
+    const trimmedValue = value.trim().toLowerCase();
+    setSearchTerm(trimmedValue);
+    setCurrentPage(1);
+  };
+
+  // Clear data when single date changes
+  const handleSingleDateChange = (date: Dayjs | null) => {
+    setTransactions([]); // Clear all data immediately
+    setCurrentPage(1); // Reset to first page
+    setSingleDate(date);
+    setFilterChangeTrigger(prev => prev + 1); // Force useEffect to run
+  };
+
+  // Clear data when custom date range changes
+  const handleCustomStartDateChange = (date: Dayjs | null) => {
+    setTransactions([]); // Clear all data immediately
+    setCurrentPage(1); // Reset to first page
+    setCustomStartDate(date);
+    setFilterChangeTrigger(prev => prev + 1); // Force useEffect to run
+  };
+
+  const handleCustomEndDateChange = (date: Dayjs | null) => {
+    setTransactions([]); // Clear all data immediately
+    setCurrentPage(1); // Reset to first page
+    setCustomEndDate(date);
+    setFilterChangeTrigger(prev => prev + 1); // Force useEffect to run
+  };
+  const [currentPage, setCurrentPage] = useState(1);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 768px)');
 
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
         setLoading(true);
         
+        // Get user's local timezone
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        
         // Build query parameters for API filtering
         const params = new URLSearchParams();
         if (searchTerm) {
           params.append('search', searchTerm);
         }
-        if (filterDate) {
-          params.append('date', filterDate.format('YYYY-MM-DD'));
+        
+        // Add filter parameter
+        params.append('filter', dateFilter);
+        
+        // Add single date if selected
+        if (dateFilter === 'singleDate' && singleDate) {
+          params.append('date', singleDate.format('YYYY-MM-DD'));
         }
         
-        const queryParams = params.toString();
-        const data = await getTransactions(queryParams || undefined);
+        // Add custom date range if selected
+        if (dateFilter === 'customRange' && customStartDate && customEndDate) {
+          params.append('startDate', customStartDate.format('YYYY-MM-DD'));
+          params.append('endDate', customEndDate.format('YYYY-MM-DD'));
+        }
+        
+        // Always send timezone
+        params.append('timezone', timezone);
+        
+        const data = await getTransactions(params.toString());
         setTransactions(data);
         setLoading(false);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to fetch transactions:', error);
-        setToastMessage('Failed to load transactions');
+        setToastMessage(error.response?.data?.message || 'Failed to load transactions');
         setLoading(false);
       }
     };
 
     void fetchTransactions();
-  }, [searchTerm, filterDate]);
+  }, [searchTerm, dateFilter, singleDate, customStartDate, customEndDate, filterChangeTrigger]);
 
   useEffect(() => {
     if (toastMessage) {
@@ -52,6 +114,22 @@ export function Transactions() {
       return () => clearTimeout(timer);
     }
   }, [toastMessage]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   const handleDeleteClick = (id: string) => {
     setTransactionToDelete(id);
@@ -106,15 +184,23 @@ export function Transactions() {
     },
     {
       title: 'Date',
-      dataIndex: 'createdAt',
+      dataIndex: 'localCreatedAt',
       key: 'date',
-      render: (date: string) => dayjs(date).format('MMM DD, YYYY'),
+      render: (localDate: string, record: Transaction) => {
+        // Use localCreatedAt if available, fallback to createdAt
+        const dateToUse = localDate || record.createdAt;
+        return dayjs(dateToUse).format('MMM DD, YYYY');
+      },
     },
     {
       title: 'Time',
-      dataIndex: 'createdAt',
+      dataIndex: 'localCreatedAt',
       key: 'time',
-      render: (date: string) => dayjs(date).format('hh:mm A'),
+      render: (localDate: string, record: Transaction) => {
+        // Use localCreatedAt if available, fallback to createdAt
+        const dateToUse = localDate || record.createdAt;
+        return dayjs(dateToUse).format('hh:mm A');
+      },
     },
     {
       title: 'Actions',
@@ -186,37 +272,150 @@ export function Transactions() {
       <div className="transactions-header">
         <h2>Transactions</h2>
         <div className="transactions-filters">
-          <Search
-            placeholder="Search by transaction ID or amount"
-            allowClear
-            enterButton={<SearchOutlined />}
+        <Search
+          placeholder="Search transactions..."
+          allowClear
+          enterButton
+          size="large"
+          onSearch={handleSearch}
+          style={{ width: 300 }}
+        />
+        
+        <Space size="middle">
+          <Select
+            value={dateFilter}
+            onChange={handleDateFilterChange}
             size="large"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onSearch={(value) => setSearchTerm(value)}
-          />
-          <DatePicker
-            value={filterDate}
-            onChange={(date) => setFilterDate(date)}
-            placeholder="Filter by date"
-            size="large"
-            disabledDate={(current) => current && current > dayjs().endOf('day')}
-          />
+            style={{ width: 150 }}
+            suffixIcon={<CalendarOutlined />}
+          >
+            <Select.Option value="today">Today</Select.Option>
+            <Select.Option value="yesterday">Yesterday</Select.Option>
+            <Select.Option value="thisMonth">This Month</Select.Option>
+            <Select.Option value="lastMonth">Last Month</Select.Option>
+            <Select.Option value="last3Months">Last 3 Months</Select.Option>
+            <Select.Option value="lastYear">Last Year</Select.Option>
+            <Select.Option value="currentYear">Current Year</Select.Option>
+            <Select.Option value="singleDate">Single Date</Select.Option>
+            <Select.Option value="customRange">Custom Range</Select.Option>
+          </Select>
+          
+          {dateFilter === 'singleDate' && (
+            <DatePicker
+              value={singleDate}
+              onChange={handleSingleDateChange}
+              placeholder="Choose date"
+              size="large"
+              style={{ width: 140 }}
+              disabledDate={(current) => current && current > dayjs().endOf('day')}
+            />
+          )}
+          
+          {dateFilter === 'customRange' && (
+            <Space>
+              <DatePicker
+                value={customStartDate}
+                onChange={handleCustomStartDateChange}
+                placeholder="Start date"
+                size="large"
+                style={{ width: 140 }}
+                disabledDate={(current) => current && current > dayjs().endOf('day')}
+              />
+              <DatePicker
+                value={customEndDate}
+                onChange={handleCustomEndDateChange}
+                placeholder="End date"
+                size="large"
+                style={{ width: 140 }}
+                disabledDate={(current) => current && current > dayjs().endOf('day')}
+              />
+            </Space>
+          )}
+        </Space>
         </div>
       </div>
       
-      <Table
-        columns={columns}
-        dataSource={filteredTransactions}
-        rowKey="_id"
-        loading={loading}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: false,
-          showQuickJumper: true,
-          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-        }}
-      />
+      {isMobile ? (
+        <div className="mobile-transactions-list">
+          {filteredTransactions
+            .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+            .map((transaction) => (
+              <Card key={transaction._id} className="mobile-transaction-card">
+                <div className="mobile-transaction-header">
+                  <Tag color="blue">#{transaction._id.slice(-8)}</Tag>
+                  <Button
+                    icon={<DeleteOutlined />}
+                    onClick={() => handleDeleteClick(transaction._id)}
+                    danger
+                    size="small"
+                  >
+                    Delete
+                  </Button>
+                </div>
+                <div className="mobile-transaction-body">
+                  <div className="mobile-transaction-amount">
+                    <span className="amount-label">Amount</span>
+                    <span className="amount-value">₹{transaction.amount.toFixed(2)}</span>
+                  </div>
+                  <div className="mobile-transaction-date">
+                    <div className="date-item">
+                      <span className="date-label">Date</span>
+                      <span className="date-value">{dayjs(transaction.localCreatedAt || transaction.createdAt).format('MMM DD, YYYY')}</span>
+                    </div>
+                    <div className="date-item">
+                      <span className="date-label">Time</span>
+                      <span className="date-value">{dayjs(transaction.localCreatedAt || transaction.createdAt).format('hh:mm A')}</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          
+          {filteredTransactions.length === 0 && !loading && (
+            <div className="no-transactions">No transactions found</div>
+          )}
+          
+          {/* Mobile Pagination */}
+          {filteredTransactions.length > PAGE_SIZE && (
+            <div className="mobile-pagination">
+              <Pagination
+                current={currentPage}
+                total={filteredTransactions.length}
+                pageSize={PAGE_SIZE}
+                showSizeChanger={false}
+                showQuickJumper={false}
+                showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
+                onChange={(page) => setCurrentPage(page)}
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        <Table
+          className="desktop-transactions"
+          columns={columns}
+          dataSource={filteredTransactions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)}
+          rowKey="_id"
+          loading={loading}
+          pagination={false}
+          scroll={{ x: 800 }}
+        />
+      )}
+      
+      {/* Desktop Pagination */}
+      {!isMobile && filteredTransactions.length > PAGE_SIZE && (
+        <div style={{ marginTop: 16, textAlign: 'center' }}>
+          <Pagination
+            current={currentPage}
+            total={filteredTransactions.length}
+            pageSize={PAGE_SIZE}
+            showSizeChanger={false}
+            showQuickJumper={false}
+            showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
+            onChange={(page) => setCurrentPage(page)}
+          />
+        </div>
+      )}
       
       <ConfirmPopup 
         isOpen={deleteConfirmOpen}
@@ -224,6 +423,20 @@ export function Transactions() {
         message="Are you sure you want to delete this transaction? This action cannot be undone."
         onConfirm={() => void handleConfirmDelete()}
         onCancel={handleCancelDelete}
+      />
+      
+      {toastMessage && (
+        <Toast message={toastMessage} />
+      )}
+      
+      {/* Scroll to Top Button */}
+      <Button
+        type="primary"
+        shape="circle"
+        icon={<ArrowUpOutlined />}
+        className={`scroll-to-top ${showScrollTop ? 'visible' : ''}`}
+        onClick={scrollToTop}
+        size="large"
       />
       
       {toastMessage && (

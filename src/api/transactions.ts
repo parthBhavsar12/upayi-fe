@@ -6,6 +6,7 @@ export interface Transaction {
   user_id: string;
   createdAt: string;
   updatedAt: string;
+  localCreatedAt?: string;
 }
 
 export const saveTransaction = async (amount: number): Promise<Transaction> => {

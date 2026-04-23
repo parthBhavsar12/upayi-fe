@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { getTransactions, deleteTransaction, Transaction } from '../../api/transactions';
 import { ConfirmPopup } from '../../components/Common/ConfirmPopup';
 import { Toast } from '../../components/Common/Toast';
-import { Table, Button, Tag, DatePicker, Input, Card, Row, Col, Statistic, Pagination } from 'antd';
-import { DeleteOutlined, SearchOutlined, ArrowUpOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, DatePicker, Input, Card, Row, Col, Statistic, Pagination, Select, Space } from 'antd';
+import { DeleteOutlined, ArrowUpOutlined, CalendarOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import '../../styles/Transactions.css';
@@ -18,7 +18,48 @@ export function Transactions() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterDate, setFilterDate] = useState<Dayjs | null>(null);
+  const [dateFilter, setDateFilter] = useState<'today' | 'yesterday' | 'thisMonth' | 'lastMonth' | 'last3Months' | 'lastYear' | 'currentYear' | 'singleDate' | 'customRange'>('today');
+  const [singleDate, setSingleDate] = useState<Dayjs | null>(null);
+  const [customStartDate, setCustomStartDate] = useState<Dayjs | null>(null);
+  const [customEndDate, setCustomEndDate] = useState<Dayjs | null>(null);
+  const [filterChangeTrigger, setFilterChangeTrigger] = useState(0);
+
+  // Clear transactions when filter changes to prevent confusion
+  const handleDateFilterChange = (newFilter: typeof dateFilter) => {
+    setTransactions([]); // Clear all data immediately
+    setCurrentPage(1); // Reset to first page
+    setDateFilter(newFilter);
+    setFilterChangeTrigger(prev => prev + 1); // Force useEffect to run
+  };
+
+  const handleSearch = (value: string) => {
+    const trimmedValue = value.trim().toLowerCase();
+    setSearchTerm(trimmedValue);
+    setCurrentPage(1);
+  };
+
+  // Clear data when single date changes
+  const handleSingleDateChange = (date: Dayjs | null) => {
+    setTransactions([]); // Clear all data immediately
+    setCurrentPage(1); // Reset to first page
+    setSingleDate(date);
+    setFilterChangeTrigger(prev => prev + 1); // Force useEffect to run
+  };
+
+  // Clear data when custom date range changes
+  const handleCustomStartDateChange = (date: Dayjs | null) => {
+    setTransactions([]); // Clear all data immediately
+    setCurrentPage(1); // Reset to first page
+    setCustomStartDate(date);
+    setFilterChangeTrigger(prev => prev + 1); // Force useEffect to run
+  };
+
+  const handleCustomEndDateChange = (date: Dayjs | null) => {
+    setTransactions([]); // Clear all data immediately
+    setCurrentPage(1); // Reset to first page
+    setCustomEndDate(date);
+    setFilterChangeTrigger(prev => prev + 1); // Force useEffect to run
+  };
   const [currentPage, setCurrentPage] = useState(1);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -36,11 +77,21 @@ export function Transactions() {
         if (searchTerm) {
           params.append('search', searchTerm);
         }
-        if (filterDate) {
-          params.append('date', filterDate.format('YYYY-MM-DD'));
+        
+        // Add filter parameter
+        params.append('filter', dateFilter);
+        
+        // Add single date if selected
+        if (dateFilter === 'singleDate' && singleDate) {
+          params.append('date', singleDate.format('YYYY-MM-DD'));
         }
-        // Don't send 'all=true' by default - let backend show today's data
-        // Only send 'all=true' when user explicitly wants all data (e.g., via a "Show All" button)
+        
+        // Add custom date range if selected
+        if (dateFilter === 'customRange' && customStartDate && customEndDate) {
+          params.append('startDate', customStartDate.format('YYYY-MM-DD'));
+          params.append('endDate', customEndDate.format('YYYY-MM-DD'));
+        }
+        
         // Always send timezone
         params.append('timezone', timezone);
         
@@ -55,7 +106,7 @@ export function Transactions() {
     };
 
     void fetchTransactions();
-  }, [searchTerm, filterDate]);
+  }, [searchTerm, dateFilter, singleDate, customStartDate, customEndDate, filterChangeTrigger]);
 
   useEffect(() => {
     if (toastMessage) {
@@ -221,22 +272,66 @@ export function Transactions() {
       <div className="transactions-header">
         <h2>Transactions</h2>
         <div className="transactions-filters">
-          <Search
-            placeholder="Search by transaction ID or amount"
-            allowClear
-            enterButton={<SearchOutlined />}
+        <Search
+          placeholder="Search transactions..."
+          allowClear
+          enterButton
+          size="large"
+          onSearch={handleSearch}
+          style={{ width: 300 }}
+        />
+        
+        <Space size="middle">
+          <Select
+            value={dateFilter}
+            onChange={handleDateFilterChange}
             size="large"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onSearch={(value) => setSearchTerm(value)}
-          />
-          <DatePicker
-            value={filterDate}
-            onChange={(date) => setFilterDate(date)}
-            placeholder="Filter by date"
-            size="large"
-            disabledDate={(current) => current && current > dayjs().endOf('day')}
-          />
+            style={{ width: 150 }}
+            suffixIcon={<CalendarOutlined />}
+          >
+            <Select.Option value="today">Today</Select.Option>
+            <Select.Option value="yesterday">Yesterday</Select.Option>
+            <Select.Option value="thisMonth">This Month</Select.Option>
+            <Select.Option value="lastMonth">Last Month</Select.Option>
+            <Select.Option value="last3Months">Last 3 Months</Select.Option>
+            <Select.Option value="lastYear">Last Year</Select.Option>
+            <Select.Option value="currentYear">Current Year</Select.Option>
+            <Select.Option value="singleDate">Single Date</Select.Option>
+            <Select.Option value="customRange">Custom Range</Select.Option>
+          </Select>
+          
+          {dateFilter === 'singleDate' && (
+            <DatePicker
+              value={singleDate}
+              onChange={handleSingleDateChange}
+              placeholder="Choose date"
+              size="large"
+              style={{ width: 140 }}
+              disabledDate={(current) => current && current > dayjs().endOf('day')}
+            />
+          )}
+          
+          {dateFilter === 'customRange' && (
+            <Space>
+              <DatePicker
+                value={customStartDate}
+                onChange={handleCustomStartDateChange}
+                placeholder="Start date"
+                size="large"
+                style={{ width: 140 }}
+                disabledDate={(current) => current && current > dayjs().endOf('day')}
+              />
+              <DatePicker
+                value={customEndDate}
+                onChange={handleCustomEndDateChange}
+                placeholder="End date"
+                size="large"
+                style={{ width: 140 }}
+                disabledDate={(current) => current && current > dayjs().endOf('day')}
+              />
+            </Space>
+          )}
+        </Space>
         </div>
       </div>
       
@@ -291,24 +386,35 @@ export function Transactions() {
                 showQuickJumper={false}
                 showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
                 onChange={(page) => setCurrentPage(page)}
-                simple={true}
               />
             </div>
           )}
         </div>
       ) : (
         <Table
+          className="desktop-transactions"
           columns={columns}
-          dataSource={filteredTransactions}
+          dataSource={filteredTransactions.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)}
           rowKey="_id"
           loading={loading}
-          pagination={{
-            pageSize: 10,
-            showSizeChanger: false,
-            showQuickJumper: true,
-            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-          }}
+          pagination={false}
+          scroll={{ x: 800 }}
         />
+      )}
+      
+      {/* Desktop Pagination */}
+      {!isMobile && filteredTransactions.length > PAGE_SIZE && (
+        <div style={{ marginTop: 16, textAlign: 'center' }}>
+          <Pagination
+            current={currentPage}
+            total={filteredTransactions.length}
+            pageSize={PAGE_SIZE}
+            showSizeChanger={false}
+            showQuickJumper={false}
+            showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
+            onChange={(page) => setCurrentPage(page)}
+          />
+        </div>
       )}
       
       <ConfirmPopup 
@@ -332,6 +438,10 @@ export function Transactions() {
         onClick={scrollToTop}
         size="large"
       />
+      
+      {toastMessage && (
+        <Toast message={toastMessage} />
+      )}
     </div>
   );
 }

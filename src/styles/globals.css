@@ -1,7 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Momo+Trust+Sans:wght@200..800&display=swap');
+
 :root {
   color: #123244;
   background: #eff9ff;
   font-family:
+    "Momo Trust Sans",
     Inter,
     ui-sans-serif,
     system-ui,
@@ -953,12 +956,14 @@ input {
   font-weight: 700;
   color: #1e293b;
   line-height: 1.2;
+  margin-bottom: 4px;
 }
 
 .header-user-email {
   font-size: 0.75rem;
   color: #64748b;
   line-height: 1.2;
+  margin-top: 2px;
 }
 
 /* Mobile Menu Styles */

@@ -4,6 +4,8 @@ import { MainLayout } from './layouts/MainLayout';
 import { Home } from './pages/Home/Home';
 import { SignIn } from './pages/Auth/SignIn';
 import { SignUp } from './pages/Auth/SignUp';
+import { ForgotPassword } from './pages/Auth/ForgotPassword';
+import { ResetPassword } from './pages/Auth/ResetPassword';
 import { Transactions } from './pages/Transactions/Transactions';
 import { Profile } from './pages/Profile/Profile';
 import { AuthProvider } from './context/AuthContext';
@@ -23,6 +25,8 @@ function App() {
           <Route element={<GuestRoute />}>
             <Route path="signin" element={<SignIn />} />
             <Route path="signup" element={<SignUp />} />
+            <Route path="forgot-password" element={<ForgotPassword />} />
+            <Route path="reset-password" element={<ResetPassword />} />
           </Route>
         </Route>
       </Routes>

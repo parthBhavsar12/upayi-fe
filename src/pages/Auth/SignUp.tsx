@@ -1,17 +1,18 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 
 import { PageLayout } from '../../components/Common/PageLayout';
 import { Input } from '../../components/Common/Input';
+import { Toast } from '../../components/Common/Toast';
 import { signUpSchema } from '../../schemas';
 import { authService } from '../../api/auth';
-import { useAuth } from '../../context/AuthContext';
 
 export function SignUp() {
-  const { login } = useAuth();
   const [apiError, setApiError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState('');
+  const navigate = useNavigate();
 
   const {
     register,
@@ -22,15 +23,24 @@ export function SignUp() {
     mode: 'onBlur',
   });
 
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timeoutId = window.setTimeout(() => setToastMessage(''), 3000);
+    return () => window.clearTimeout(timeoutId);
+  }, [toastMessage]);
+
   const onSubmit = async (data: any) => {
     try {
       setApiError(null);
       // Remove confirmPassword before sending to API
       const { confirmPassword, ...signupData } = data;
-      const response = await authService.signup(signupData);
-      login(response);
+      await authService.signup(signupData);
+      setToastMessage('Verification email sent. Please check your inbox.');
+      navigate('/signin', { state: { toast: 'Verification email sent. Please check your inbox.', email: signupData.email } });
     } catch (error: any) {
-      setApiError(error.response?.data?.message || 'Failed to create account. Please try again.');
+      const message = error.response?.data?.message || 'Failed to create account. Please try again.';
+      setApiError(message);
+      setToastMessage(message);
     }
   };
 
@@ -108,6 +118,7 @@ export function SignUp() {
           <p>Already have an account? <Link to="/signin">Sign in</Link></p>
         </footer>
       </div>
+      <Toast message={toastMessage} />
     </PageLayout>
   );
 }

@@ -8,6 +8,10 @@ interface ConfirmPopupProps {
   message: string;
   onConfirm: () => void;
   onCancel: () => void;
+  confirmText?: string;
+  cancelText?: string;
+  isConfirmLoading?: boolean;
+  confirmLoadingText?: string;
 }
 
 export const ConfirmPopup: React.FC<ConfirmPopupProps> = ({
@@ -16,6 +20,10 @@ export const ConfirmPopup: React.FC<ConfirmPopupProps> = ({
   message,
   onConfirm,
   onCancel,
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
+  isConfirmLoading = false,
+  confirmLoadingText = 'Processing...',
 }) => {
   if (!isOpen) return null;
 
@@ -25,11 +33,20 @@ export const ConfirmPopup: React.FC<ConfirmPopupProps> = ({
         <h2 className="popup-title">{title}</h2>
         <p className="popup-message">{message}</p>
         <div className="popup-actions">
-          <button className="popup-button popup-button--cancel" onClick={onCancel}>
-            Cancel
+          <button
+            className="popup-button popup-button--cancel"
+            onClick={onCancel}
+            disabled={isConfirmLoading}
+          >
+            {cancelText}
           </button>
-          <button className="popup-button popup-button--confirm" onClick={onConfirm}>
-            Confirm
+          <button
+            className="popup-button popup-button--confirm"
+            onClick={onConfirm}
+            disabled={isConfirmLoading}
+            aria-busy={isConfirmLoading}
+          >
+            {isConfirmLoading ? confirmLoadingText : confirmText}
           </button>
         </div>
       </div>

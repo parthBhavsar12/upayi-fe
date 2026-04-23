@@ -59,3 +59,22 @@ export const signUpSchema = yup.object({
     .required('Please confirm your password.'),
 });
 
+export const changePasswordSchema = yup.object({
+  oldPassword: yup
+    .string()
+    .trim()
+    .required('Current password is required.'),
+  newPassword: yup
+    .string()
+    .trim()
+    .min(8, 'Password must be at least 8 characters.')
+    .matches(/[a-zA-Z]/, 'Password must contain at least one letter.')
+    .matches(/[0-9]/, 'Password must contain at least one number.')
+    .required('New password is required.'),
+  confirmPassword: yup
+    .string()
+    .trim()
+    .oneOf([yup.ref('newPassword')], 'Passwords must match.')
+    .required('Please confirm your new password.'),
+});
+

@@ -1,4 +1,6 @@
 import { QRCodeSVG } from 'qrcode.react';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../store';
 import { env } from '../../config/env';
 
 interface QrPanelProps {
@@ -7,6 +9,12 @@ interface QrPanelProps {
 }
 
 export function QrPanel({ amount, paymentUrl }: QrPanelProps) {
+  const { profile } = useSelector((state: RootState) => state.profile);
+
+  if (!profile) {
+    return null;
+  }
+
   return (
     <section className="qr-panel" aria-label="Generated UPI QR code">
       <div className="qr-panel__details">
@@ -15,8 +23,8 @@ export function QrPanel({ amount, paymentUrl }: QrPanelProps) {
           <span>{env.upiCurrencySymbol}</span>
           <span>{amount}</span>
         </strong>
-        <small>Receiver: {env.payeeName}</small>
-        <small>UPI ID: {env.payeeUpiId}</small>
+        <small>Receiver: {profile.name}</small>
+        <small>UPI ID: {profile.upiId}</small>
       </div>
       <div className="qr-panel__code">
         <QRCodeSVG

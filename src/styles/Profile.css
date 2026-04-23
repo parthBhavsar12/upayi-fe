@@ -1,0 +1,197 @@
+.profile-container {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  padding: 32px;
+  margin-top: 24px;
+}
+
+.profile-loading,
+.profile-empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 40px 0;
+  font-size: 1rem;
+}
+
+.profile-section {
+  margin-bottom: 16px;
+}
+
+.profile-section:last-child {
+  margin-bottom: 0;
+}
+
+.profile-section-title {
+  margin: 0 0 16px 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.profile-divider {
+  border: 0;
+  height: 1px;
+  background: #e5e7eb;
+  margin: 16px 0;
+}
+
+.profile-field {
+  margin-bottom: 20px;
+}
+
+.profile-field:last-child {
+  margin-bottom: 0;
+}
+
+.profile-label {
+  display: block !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  color: #6b7280 !important;
+  margin-bottom: 8px !important;
+}
+
+/* More specific to override form-group label */
+.form-group .profile-label {
+  display: block !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  color: #6b7280 !important;
+  margin-bottom: 8px !important;
+}
+
+.profile-value {
+  font-size: 1rem;
+  color: #1f2937;
+  padding: 10px 14px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.profile-value.readonly {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.profile-edit-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.profile-edit-group .profile-value {
+  flex: 1;
+}
+
+.profile-input {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.profile-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.profile-edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.profile-btn {
+  padding: 10px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  height: 44px;
+}
+
+.profile-btn--edit {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.profile-btn--edit:hover {
+  background-color: #e5e7eb;
+}
+
+.profile-btn--save {
+  background-color: #2563eb;
+  color: white;
+}
+
+.profile-btn--save:hover {
+  background-color: #1d4ed8;
+}
+
+.profile-btn--save:disabled {
+  background-color: #93c5fd;
+  cursor: not-allowed;
+}
+
+.profile-btn--cancel {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.profile-btn--cancel:hover {
+  background-color: #fecaca;
+}
+
+.profile-form {
+  max-width: 400px;
+}
+
+.profile-submit-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 12px;
+}
+
+.profile-submit-btn:hover:not(:disabled) {
+  background-color: #059669;
+}
+
+.profile-submit-btn:disabled {
+  background-color: #6ee7b7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .profile-container {
+    padding: 20px;
+  }
+  
+  .profile-edit-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .profile-edit-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+}

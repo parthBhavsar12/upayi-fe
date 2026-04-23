@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 
 export function Header() {
   const location = useLocation();
-  const { logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
 
   const isSignIn = location.pathname === '/signin';
   const isSignUp = location.pathname === '/signup';
@@ -17,9 +17,30 @@ export function Header() {
         </Link>
         <nav className="global-header__nav">
           {isAuthenticated ? (
-            <button className="nav-link nav-link--primary" onClick={logout}>
-              Sign Out
-            </button>
+            <div className="header-auth-section">
+              <div className="header-nav-links">
+                <NavLink
+                  to="/transactions"
+                  className={`nav-link ${location.pathname === '/transactions' ? 'nav-link--primary' : ''}`}
+                >
+                  Transactions
+                </NavLink>
+              </div>
+              {user && (
+                <Link to="/profile" className="header-user-profile" style={{ textDecoration: 'none' }}>
+                  <div className="header-user-avatar">
+                    {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                  </div>
+                  <div className="header-user-info">
+                    <span className="header-user-name">{user.name}</span>
+                    <span className="header-user-email">{user.email}</span>
+                  </div>
+                </Link>
+              )}
+              <button className="nav-link nav-link--primary" onClick={logout}>
+                Sign Out
+              </button>
+            </div>
           ) : (
             <>
               <NavLink
